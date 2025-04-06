@@ -36,10 +36,10 @@
 ## General
 #
 # program information
-readonly prog_name="kalitorify"
-readonly version="1.29.0"
-readonly signature="Copyright (C) 2022 brainf+ck"
-readonly git_url="https://github.com/brainfucksec/kalitorify"
+readonly prog_name="Anon-Route"
+readonly version="1.0.0"
+readonly signature="Copyright (C) 2025"
+readonly git_url="https://github.com/brainfucksec/Anon-ROUTE"
 
 # set colors for stdout
 export red="$(tput setaf 1)"
@@ -50,8 +50,8 @@ export b="$(tput bold)"
 export reset="$(tput sgr0)"
 
 ## Directories
-readonly data_dir="/usr/share/kalitorify/data"      # config files
-readonly backup_dir="/var/lib/kalitorify/backups"   # backups
+readonly data_dir="/usr/share/Anon-Route/data"      # config files
+readonly backup_dir="/var/lib/Anon-Route/backups"   # backups
 
 ## Network settings
 #
@@ -75,14 +75,14 @@ readonly non_tor="127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 ## Show program banner
 banner() {
 printf "${b}${white}
- _____     _ _ _           _ ___
-|  |  |___| |_| |_ ___ ___|_|  _|_ _
-|    -| .'| | |  _| . |  _| |  _| | |
-|__|__|__,|_|_|_| |___|_| |_|_| |_  |
-                                |___| v${version}
+     _   _  ____  ____  _   _     ____             _       
+    / \ | |/ ___||  _ \| \ | |   |  _ \ ___   ___ | |_ ___ 
+   / _ \| | |  _ | |_) |  \| |   | |_) / _ \ / _ \| __/ _ \
+  / ___ \ | |_| ||  _ <| |\  |   |  _ < (_) | (_) | ||  __/
+ /_/   \_\_|\____||_| \_\_| \_|   |_| \_\___/ \___/ \__\___| v${version}
 
 =[ Transparent proxy through Tor
-=[ brainfucksec
+=[ CHEEMA
 ${reset}\\n\\n"
 }
 
@@ -119,8 +119,6 @@ check_root() {
 print_version() {
     printf "%s\\n" "${prog_name} ${version}"
     printf "%s\\n" "${signature}"
-    printf "%s\\n" "License GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>"
-    printf "%s\\n" "This is free software: you are free to change and redistribute it."
     printf "%s\\n" "There is NO WARRANTY, to the extent permitted by law."
     exit 0
 }
