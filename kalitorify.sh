@@ -1,45 +1,12 @@
 #!/usr/bin/env bash
 
-################################################################################
-#                                                                              #
-# kalitorify.sh                                                                #
-#                                                                              #
-# version: 1.29.0                                                              #
-#                                                                              #
-# Kali Linux - Transparent proxy through Tor                                   #
-#                                                                              #
-# Copyright (C) 2015-2022 brainf+ck                                            #
-#                                                                              #
-# Kalitorify is KISS version of Parrot AnonSurf Module of Parrot OS:           #
-# - https://www.parrotsec.org                                                  #
-# - https://nest.parrot.sh/packages/tools/anonsurf                             #
-#                                                                              #
-#                                                                              #
-# GNU GENERAL PUBLIC LICENSE                                                   #
-#                                                                              #
-# This program is free software: you can redistribute it and/or modify         #
-# it under the terms of the GNU General Public License as published by         #
-# the Free Software Foundation, either version 3 of the License, or            #
-# (at your option) any later version.                                          #
-#                                                                              #
-# This program is distributed in the hope that it will be useful,              #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                #
-# GNU General Public License for more details.                                 #
-#                                                                              #
-# You should have received a copy of the GNU General Public License            #
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.        #
-#                                                                              #
-################################################################################
-
-
 ## General
 #
 # program information
-readonly prog_name="kalitorify"
-readonly version="1.29.0"
-readonly signature="Copyright (C) 2022 brainf+ck"
-readonly git_url="https://github.com/brainfucksec/kalitorify"
+readonly prog_name="Anon-Route"
+readonly version="1.0.0"
+readonly signature="Copyright (C) 2025"
+readonly git_url="https://github.com/brainfucksec/Anon-ROUTE"
 
 # set colors for stdout
 export red="$(tput setaf 1)"
@@ -50,8 +17,8 @@ export b="$(tput bold)"
 export reset="$(tput sgr0)"
 
 ## Directories
-readonly data_dir="/usr/share/kalitorify/data"      # config files
-readonly backup_dir="/var/lib/kalitorify/backups"   # backups
+readonly data_dir="/usr/share/Anon-Route/data"      # config files
+readonly backup_dir="/var/lib/Anon-Route/backups"   # backups
 
 ## Network settings
 #
@@ -75,14 +42,15 @@ readonly non_tor="127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 ## Show program banner
 banner() {
 printf "${b}${white}
- _____     _ _ _           _ ___
-|  |  |___| |_| |_ ___ ___|_|  _|_ _
-|    -| .'| | |  _| . |  _| |  _| | |
-|__|__|__,|_|_|_| |___|_| |_|_| |_  |
-                                |___| v${version}
+    _                            ____               _      
+   / \    __ _  ___   __ _      / _  | ___  _   _ _| |___  
+  / _ \  / _` |/ _ \ / _` |____| (_| |/ _ \| | | |__ / _ \ 
+ / ___ \| | | | (_) | | | |_____> _  | (_) | |_| |_| \__  |
+/_/   \_|_| |_|\___/|_| |_|    /_/ |_|\___/|_.__/|__/|___/ 
+                                                            v${version}
 
 =[ Transparent proxy through Tor
-=[ brainfucksec
+=[ CHEEMA
 ${reset}\\n\\n"
 }
 
@@ -101,7 +69,7 @@ info() {
 }
 
 
-## Print `OK` messages
+## Print OK messages
 msg() {
     printf "${b}${green}%s${reset} %s\\n\\n" "[OK]" "${@}"
 }
@@ -119,8 +87,6 @@ check_root() {
 print_version() {
     printf "%s\\n" "${prog_name} ${version}"
     printf "%s\\n" "${signature}"
-    printf "%s\\n" "License GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>"
-    printf "%s\\n" "This is free software: you are free to change and redistribute it."
     printf "%s\\n" "There is NO WARRANTY, to the extent permitted by law."
     exit 0
 }
@@ -289,28 +255,36 @@ setup_iptables() {
 # Make an HTTP request to the ip api service on the list, if the
 # first request fails try with the next, then print the IP address
 check_ip() {
-
     # IP API URLs list
     local url_list=(
-        'https://ipinfo.io/'
+        'https://ipinfo.io/ip'
         'https://api.myip.com/'
         'https://ifconfig.me'
+        'whatismyipaddress.com'
     )
 
-    info "Check public IP address"
+    info "Checking public IP address..."
 
     for url in "${url_list[@]}"; do
-        local request="$(curl -s "$url")"
+        # Use torsocks if available, or just curl
+        if command -v torsocks &>/dev/null; then
+            local request="$(torsocks curl -A 'Mozilla/5.0' -s "$url")"
+        else
+            local request="$(curl -A 'Mozilla/5.0' -s "$url")"
+        fi
+
         local response="$?"
 
-        if [[ "$response" -ne 0 ]]; then
+        if [[ "$response" -ne 0 || -z "$request" ]]; then
             continue
         fi
 
-        printf "%s\\n" "${request}"
+        success "Public IP fetched from: $url"
+        printf "%s\n" "${request}"
         break
     done
 }
+
 
 
 ## Check status of program and services
@@ -526,4 +500,3 @@ main() {
 
 # Call main
 main "${@}"
-
