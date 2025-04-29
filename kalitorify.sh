@@ -42,12 +42,11 @@ readonly non_tor="127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 ## Show program banner
 banner() {
 printf "${b}${white}
-    _                            ____               _      
-   / \    __ _  ___   __ _      / _  | ___  _   _ _| |___  
-  / _ \  / _` |/ _ \ / _` |____| (_| |/ _ \| | | |__ / _ \ 
- / ___ \| | | | (_) | | | |_____> _  | (_) | |_| |_| \__  |
-/_/   \_|_| |_|\___/|_| |_|    /_/ |_|\___/|_.__/|__/|___/ 
-                                                            v${version}
+     _   _  ____  ____  _   _     ____             _       
+    / \ | |/ ___||  _ \| \ | |   |  _ \ ___   ___ | |_ ___ 
+   / _ \| | |  _ | |_) |  \| |   | |_) / _ \ / _ \| __/ _ \
+  / ___ \ | |_| ||  _ <| |\  |   |  _ < (_) | (_) | ||  __/
+ /_/   \_\_|\____||_| \_\_| \_|   |_| \_\___/ \___/ \__\___| v${version}
 
 =[ Transparent proxy through Tor
 =[ CHEEMA
@@ -255,36 +254,28 @@ setup_iptables() {
 # Make an HTTP request to the ip api service on the list, if the
 # first request fails try with the next, then print the IP address
 check_ip() {
+
     # IP API URLs list
     local url_list=(
-        'https://ipinfo.io/ip'
+        'https://ipinfo.io/'
         'https://api.myip.com/'
         'https://ifconfig.me'
-        'whatismyipaddress.com'
     )
 
-    info "Checking public IP address..."
+    info "Check public IP address"
 
     for url in "${url_list[@]}"; do
-        # Use torsocks if available, or just curl
-        if command -v torsocks &>/dev/null; then
-            local request="$(torsocks curl -A 'Mozilla/5.0' -s "$url")"
-        else
-            local request="$(curl -A 'Mozilla/5.0' -s "$url")"
-        fi
-
+        local request="$(curl -s "$url")"
         local response="$?"
 
-        if [[ "$response" -ne 0 || -z "$request" ]]; then
+        if [[ "$response" -ne 0 ]]; then
             continue
         fi
 
-        success "Public IP fetched from: $url"
-        printf "%s\n" "${request}"
+        printf "%s\\n" "${request}"
         break
     done
 }
-
 
 
 ## Check status of program and services
