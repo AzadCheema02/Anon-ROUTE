@@ -266,25 +266,20 @@ setup_iptables() {
 check_ip() {
     info "Checking public IP and location..."
 
-    # Get IP and location from ipinfo.io
     local ipinfo_response
-    ipinfo_response=$(curl --silent --fail https://ipinfo.io/json)
+    ipinfo_response=$(curl --silent --fail https://api.myip.com)
 
     if [[ $? -eq 0 && -n "$ipinfo_response" ]]; then
         local ip=$(echo "$ipinfo_response" | jq -r '.ip')
-        local city=$(echo "$ipinfo_response" | jq -r '.city')
-        local region=$(echo "$ipinfo_response" | jq -r '.region')
         local country=$(echo "$ipinfo_response" | jq -r '.country')
-        local org=$(echo "$ipinfo_response" | jq -r '.org')
+        local cc=$(echo "$ipinfo_response" | jq -r '.cc')
 
         echo -e "[🧭] IP:        $ip"
-        echo -e "[🌍] Location:  $city, $region, $country"
-        echo -e "[🏢] ISP:       $org"
+        echo -e "[🌍] Country:   $country ($cc)"
     else
         echo "[!] Failed to fetch IP info"
     fi
 
-    # Tor status check
     local torcheck
     torcheck=$(curl --silent --fail https://check.torproject.org)
 
