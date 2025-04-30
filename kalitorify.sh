@@ -165,78 +165,87 @@ setup_general() {
 setup_iptables() {
     case "$1" in
         tor_proxy)
-            printf "%s\\n" "Set iptables rules"
+            printf "%s\\n" "Setting iptables rules for Tor transparent proxy"
 
-            ## Flush current iptables rules
+            # Ensure required variables are set
+            : "${trans_port:=9040}"
+            : "${dns_port:=5353}"
+            : "${virtual_address:=10.192.0.0/10}"
+            : "${tor_uid:=$(id -u debian-tor)}"
+            : "${non_tor:="192.168.0.0/16 10.0.0.0/8"}"  # Example local LANs
+
+            ## Flush existing rules
             iptables -F
             iptables -X
             iptables -t nat -F
             iptables -t nat -X
+
+            ## Reset default policies
             iptables -P INPUT ACCEPT
             iptables -P FORWARD ACCEPT
             iptables -P OUTPUT ACCEPT
 
-            ## *nat OUTPUT (For local redirection)
-            #
-            # nat .onion addresses
-            iptables -t nat -A OUTPUT -d $virtual_address -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $trans_port
+            ### === NAT TABLE ===
 
-            # nat dns requests to Tor
-            iptables -t nat -A OUTPUT -d 127.0.0.1/32 -p udp -m udp --dport 53 -j REDIRECT --to-ports $dns_port
+            # Redirect .onion traffic
+            iptables -t nat -A OUTPUT -d $virtual_address -p tcp --syn -j REDIRECT --to-ports $trans_port
 
-            # Don't nat the Tor process, the loopback, or the local network
+            # Redirect local DNS queries to Tor's DNSPort
+            iptables -t nat -A OUTPUT -d 127.0.0.1/32 -p udp --dport 53 -j REDIRECT --to-ports $dns_port
+
+            # Exempt Tor process, loopback, and local LANs
             iptables -t nat -A OUTPUT -m owner --uid-owner $tor_uid -j RETURN
             iptables -t nat -A OUTPUT -o lo -j RETURN
 
-            # Allow lan access for hosts in $non_tor
             for lan in $non_tor; do
                 iptables -t nat -A OUTPUT -d $lan -j RETURN
             done
 
-            # Redirects all other pre-routing and output to Tor's TransPort
-            iptables -t nat -A OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $trans_port
+            # Redirect remaining TCP traffic to Tor's TransPort
+            iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $trans_port
 
-            ## *filter INPUT
-            iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT
+            ### === FILTER TABLE ===
+
+            ## INPUT chain
+            iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
             iptables -A INPUT -i lo -j ACCEPT
-
-            # Drop everything else
             iptables -A INPUT -j DROP
 
-            ## *filter FORWARD
+            ## FORWARD chain
             iptables -A FORWARD -j DROP
 
-            ## *filter OUTPUT
-            #
-            # Fix for potential kernel transproxy packet leaks
-            # see: https://lists.torproject.org/pipermail/tor-talk/2014-March/032507.html
+            ## OUTPUT chain
             iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP
-
             iptables -A OUTPUT -m state --state INVALID -j DROP
-            iptables -A OUTPUT -m state --state ESTABLISHED -j ACCEPT
+            iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-            # Allow Tor process output
-            iptables -A OUTPUT -m owner --uid-owner $tor_uid -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT
+            # Allow new TCP connections from Tor process
+            iptables -A OUTPUT -m owner --uid-owner $tor_uid -p tcp --syn -m state --state NEW -j ACCEPT
 
-            # Allow loopback output
-            iptables -A OUTPUT -d 127.0.0.1/32 -o lo -j ACCEPT
+            # Allow loopback traffic
+            iptables -A OUTPUT -o lo -j ACCEPT
+            iptables -A OUTPUT -d 127.0.0.1/32 -j ACCEPT
 
-            # Tor transproxy magic
-            iptables -A OUTPUT -d 127.0.0.1/32 -p tcp -m tcp --dport $trans_port --tcp-flags FIN,SYN,RST,ACK SYN -j ACCEPT
+            # Allow traffic to Tor TransPort (to avoid self-blocking)
+            iptables -A OUTPUT -p tcp --dport $trans_port -j ACCEPT
+
+            # Allow DNSPort (if used)
+            iptables -A OUTPUT -p udp --dport $dns_port -j ACCEPT
 
             # Drop everything else
             iptables -A OUTPUT -j DROP
 
-            ## Set default policies to DROP
+            ## Set default policies to DROP (secure by default)
             iptables -P INPUT DROP
             iptables -P FORWARD DROP
             iptables -P OUTPUT DROP
-        ;;
 
+            ;;
+        
         default)
-            printf "%s\\n" "Restore default iptables rules"
+            printf "%s\\n" "Restoring default iptables rules"
 
-            # Flush iptables rules
+            # Flush and reset to default ACCEPT policies
             iptables -F
             iptables -X
             iptables -t nat -F
@@ -244,9 +253,10 @@ setup_iptables() {
             iptables -P INPUT ACCEPT
             iptables -P FORWARD ACCEPT
             iptables -P OUTPUT ACCEPT
-        ;;
+            ;;
     esac
 }
+
 
 
 ## Check public IP address
