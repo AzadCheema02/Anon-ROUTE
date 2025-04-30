@@ -264,34 +264,43 @@ setup_iptables() {
 # Make an HTTP request to the ip api service on the list, if the
 # first request fails try with the next, then print the IP address
 check_ip() {
+    info "Checking public IP address..."
 
-    # IP API URLs list
+    # Clean list of unique IP check services
     local url_list=(
-        'https://ipinfo.io/'
-        'https://api.myip.com/'
         'https://ifconfig.me'
-        'https://ipinfo.io/ip'
-        'https://check.torproject.org'
         'https://icanhazip.com'
         'https://api.myip.com'
-        'https://ifconfig.me'
+        'https://ipinfo.io/ip'
         'https://ip.tyk.nu'
+        'https://check.torproject.org'
     )
 
-    info "Check public IP address"
-
     for url in "${url_list[@]}"; do
-        local request="$(curl -s "$url")"
-        local response="$?"
+        local response
+        response=$(curl --silent --fail "$url")
 
-        if [[ "$response" -ne 0 ]]; then
+        if [[ $? -ne 0 || -z "$response" ]]; then
             continue
         fi
 
-        printf "%s\\n" "${request}"
-        break
+        # Special handling for check.torproject.org
+        if [[ "$url" == *check.torproject.org* ]]; then
+            if echo "$response" | grep -q "Congratulations. This browser is configured to use Tor."; then
+                echo "[✔] Tor is active: Connected through Tor network"
+            else
+                echo "[✘] Not connected via Tor"
+            fi
+        else
+            # Extract only IP (optional cleaning)
+            local ip=$(echo "$response" | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
+            [[ -n "$ip" ]] && echo "[→] $url → $ip"
+        fi
+
+        break  # Stop after first successful response
     done
 }
+
 
 
 ## Check status of program and services
