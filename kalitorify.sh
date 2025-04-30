@@ -264,41 +264,35 @@ setup_iptables() {
 # Make an HTTP request to the ip api service on the list, if the
 # first request fails try with the next, then print the IP address
 check_ip() {
-    info "Checking public IP address..."
+    info "Checking public IP and location..."
 
-    # Clean list of unique IP check services
-    local url_list=(
-        'https://ifconfig.me'
-        'https://icanhazip.com'
-        'https://api.myip.com'
-        'https://ipinfo.io/ip'
-        'https://ip.tyk.nu'
-        'https://check.torproject.org'
-    )
+    # Get IP and location from ipinfo.io
+    local ipinfo_response
+    ipinfo_response=$(curl --silent --fail https://ipinfo.io/json)
 
-    for url in "${url_list[@]}"; do
-        local response
-        response=$(curl --silent --fail "$url")
+    if [[ $? -eq 0 && -n "$ipinfo_response" ]]; then
+        local ip=$(echo "$ipinfo_response" | jq -r '.ip')
+        local city=$(echo "$ipinfo_response" | jq -r '.city')
+        local region=$(echo "$ipinfo_response" | jq -r '.region')
+        local country=$(echo "$ipinfo_response" | jq -r '.country')
+        local org=$(echo "$ipinfo_response" | jq -r '.org')
 
-        if [[ $? -ne 0 || -z "$response" ]]; then
-            continue
-        fi
+        echo -e "[🧭] IP:        $ip"
+        echo -e "[🌍] Location:  $city, $region, $country"
+        echo -e "[🏢] ISP:       $org"
+    else
+        echo "[!] Failed to fetch IP info"
+    fi
 
-        # Special handling for check.torproject.org
-        if [[ "$url" == *check.torproject.org* ]]; then
-            if echo "$response" | grep -q "Congratulations. This browser is configured to use Tor."; then
-                echo "[✔] Tor is active: Connected through Tor network"
-            else
-                echo "[✘] Not connected via Tor"
-            fi
-        else
-            # Extract only IP (optional cleaning)
-            local ip=$(echo "$response" | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
-            [[ -n "$ip" ]] && echo "[→] $url → $ip"
-        fi
+    # Tor status check
+    local torcheck
+    torcheck=$(curl --silent --fail https://check.torproject.org)
 
-        break  # Stop after first successful response
-    done
+    if echo "$torcheck" | grep -q "Congratulations. This browser is configured to use Tor."; then
+        echo -e "[✔] You are connected through the Tor network"
+    else
+        echo -e "[✘] You are NOT using Tor"
+    fi
 }
 
 
