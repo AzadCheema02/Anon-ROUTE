@@ -54,7 +54,7 @@ fi
 clear
 
 # Display Anon-Route banner
-figlet "Anon-Route"
+figlet "<..../Anon-Route\....>"
 
 printf "${b}${white}
 ${version}
@@ -275,23 +275,43 @@ setup_iptables() {
 # Make an HTTP request to the ip api service on the list, if the
 # first request fails try with the next, then print the IP address
 check_ip() {
-    info "Checking public IP and location..."
+    echo "[🔍] Checking public IP and Tor status..."
 
-    local ipinfo_response
+    # Ensure required tools are available
+    if ! command -v curl >/dev/null || ! command -v jq >/dev/null; then
+        echo "[!] Required tools 'curl' or 'jq' are not installed."
+        return 1
+    fi
+
+    echo -e "\n[🌐] Regular IP Information:"
     ipinfo_response=$(curl --silent --fail https://api.myip.com)
 
     if [[ $? -eq 0 && -n "$ipinfo_response" ]]; then
-        local ip=$(echo "$ipinfo_response" | jq -r '.ip')
-        local country=$(echo "$ipinfo_response" | jq -r '.country')
-        local cc=$(echo "$ipinfo_response" | jq -r '.cc')
+        ip=$(echo "$ipinfo_response" | jq -r '.ip')
+        country=$(echo "$ipinfo_response" | jq -r '.country')
+        cc=$(echo "$ipinfo_response" | jq -r '.cc')
 
-        echo -e "[🧭] IP:        $ip"
-        echo -e "[🌍] Country:   $country ($cc)"
+        echo -e "IP:        $ip"
+        echo -e "Country:   $country ($cc)"
     else
-        echo "[!] Failed to fetch IP info"
+        echo "[!] Failed to fetch regular IP info"
     fi
 
-    local torcheck
+    echo -e "\n[🧅] Tor IP Information:"
+    tor_ipinfo_response=$(curl --silent --socks5-hostname 127.0.0.1:9050 https://api.myip.com)
+
+    if [[ $? -eq 0 && -n "$tor_ipinfo_response" ]]; then
+        tor_ip=$(echo "$tor_ipinfo_response" | jq -r '.ip')
+        tor_country=$(echo "$tor_ipinfo_response" | jq -r '.country')
+        tor_cc=$(echo "$tor_ipinfo_response" | jq -r '.cc')
+
+        echo -e "Tor IP:        $tor_ip"
+        echo -e "Tor Country:   $tor_country ($tor_cc)"
+    else
+        echo "[!] Failed to fetch Tor IP info (is Tor running?)"
+    fi
+
+    echo -e "\n[🔐] Tor Network Status:"
     torcheck=$(curl --silent --fail https://check.torproject.org)
 
     if echo "$torcheck" | grep -q "Congratulations. This browser is configured to use Tor."; then
@@ -300,6 +320,7 @@ check_ip() {
         echo -e "[✘] You are NOT using Tor"
     fi
 }
+
 
 
 
