@@ -41,12 +41,23 @@ readonly non_tor="127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 
 ## Show program banner
 banner() {
+#!/bin/bash
+
+# Check if figlet is installed
+if ! command -v figlet &> /dev/null
+then
+    echo "[*] figlet not found. Installing..."
+    sudo apt-get update && sudo apt-get install figlet -y
+fi
+
+# Clear the screen
+clear
+
+# Display Anon-Route banner
+figlet "Anon-Route"
+
 printf "${b}${white}
-     _   _  ____  ____  _   _     ____             _       
-    / \ | |/ ___||  _ \| \ | |   |  _ \ ___   ___ | |_ ___ 
-   / _ \| | |  _ | |_) |  \| |   | |_) / _ \ / _ \| __/ _ \
-  / ___ \ | |_| ||  _ <| |\  |   |  _ < (_) | (_) | ||  __/
- /_/   \_\_|\____||_| \_\_| \_|   |_| \_\___/ \___/ \__\___| v${version}
+${version}
 
 =[ Transparent proxy through Tor
 =[ CHEEMA
