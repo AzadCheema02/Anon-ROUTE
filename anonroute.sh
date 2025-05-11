@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 ## General
@@ -343,45 +344,35 @@ check_ip() {
 # - tor.service
 # - tor settings (check if Tor works correctly)
 # - public IP Address
-checkstatus() {
-    echo -e "\n\e[1;34m[ Anon-Route Status Check ]\e[0m"
+check_status() {
+    info "Check current status of Tor service"
 
-    # 1. Check if Tor service is running
-    if systemctl is-active --quiet tor; then
-        echo -e "\e[32m[✓] Tor service is active\e[0m"
+    if systemctl is-active tor.service >/dev/null 2>&1; then
+        msg "Tor service is active"
     else
-        echo -e "\e[31m[✗] Tor service is not running\e[0m"
+        die "Tor service is not running! exit"
     fi
 
-    # 2. Check if iptables rules for Tor are active
-    if iptables-save | grep -q "9040"; then
-        echo -e "\e[32m[✓] iptables rules for Tor proxy are active\e[0m"
+    # make an HTTP request with curl at: https://check.torproject.org/
+    # and grep the necessary strings from the HTML page to test connection
+    # with Tor
+    info "Check Tor network settings"
+
+    # curl SOCKS options:
+    #   --socks5 <host[:port]> SOCKS5 proxy on given host + port
+    #   --socks5-hostname <host[:port]> SOCKS5 proxy, pass host name to proxy
+    local hostport="localhost:9050"
+    local url="https://check.torproject.org/"
+
+    if curl --socks5 "${hostport}" --socks5-hostname "${hostport}" -s "${url}" | cat | grep -q "Congratulations"; then
+        msg "Your system is configured to use Tor"
     else
-        echo -e "\e[31m[✗] iptables rules for Tor proxy are missing or inactive\e[0m"
+        printf "${red}%s${reset}\\n\\n" "Your system is not using Tor!"
+        printf "%s\\n" "try another Tor circuit with '${prog_name} --restart'"
+        exit 1
     fi
 
-    # 3. Check if DNS is being resolved through 127.0.0.1
-    if grep -q "nameserver 127.0.0.1" /etc/resolv.conf; then
-        echo -e "\e[32m[✓] DNS is configured for anonymity (127.0.0.1)\e[0m"
-    else
-        echo -e "\e[31m[✗] DNS is not routed through 127.0.0.1 – risk of leaks\e[0m"
-    fi
-
-    # 4. Check if IPv6 is disabled
-    if [ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6)" -eq 1 ]; then
-        echo -e "\e[32m[✓] IPv6 is disabled\e[0m"
-    else
-        echo -e "\e[31m[✗] IPv6 is enabled – may cause IP leaks\e[0m"
-    fi
-
-    # 5. Test connectivity through Tor
-    if curl -s --socks5-hostname 127.0.0.1:9050 https://check.torproject.org | grep -q "Congratulations"; then
-        echo -e "\e[32m[✓] You are connected to the Tor network\e[0m"
-    else
-        echo -e "\e[31m[✗] You are NOT connected to the Tor network\e[0m"
-    fi
-
-    echo -e ""
+    check_ip
 }
 
 
