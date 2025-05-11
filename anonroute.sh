@@ -284,29 +284,43 @@ check_ip() {
     fi
 
     echo -e "\n[🌐] Regular IP Information:"
-    ipinfo_response=$(curl --silent --fail https://api.myip.com)
+    ipinfo_response=$(curl --silent --fail https://ipwho.is)
 
     if [[ $? -eq 0 && -n "$ipinfo_response" ]]; then
         ip=$(echo "$ipinfo_response" | jq -r '.ip')
         country=$(echo "$ipinfo_response" | jq -r '.country')
-        cc=$(echo "$ipinfo_response" | jq -r '.cc')
+        region=$(echo "$ipinfo_response" | jq -r '.region')
+        city=$(echo "$ipinfo_response" | jq -r '.city')
+        isp=$(echo "$ipinfo_response" | jq -r '.connection.org')
 
         echo -e "IP:        $ip"
-        echo -e "Country:   $country ($cc)"
+        if [[ "$country" == "Unknown" ]]; then
+            echo -e "Location:  Unknown (May be anonymized or unresolvable)"
+        else
+            echo -e "Location:  $city, $region, $country"
+        fi
+        echo -e "ISP:       $isp"
     else
         echo "[!] Failed to fetch regular IP info"
     fi
 
     echo -e "\n[🧅] Tor IP Information:"
-    tor_ipinfo_response=$(curl --silent --socks5-hostname 127.0.0.1:9050 https://api.myip.com)
+    tor_ipinfo_response=$(curl --silent --socks5-hostname 127.0.0.1:9050 https://ipwho.is)
 
     if [[ $? -eq 0 && -n "$tor_ipinfo_response" ]]; then
         tor_ip=$(echo "$tor_ipinfo_response" | jq -r '.ip')
         tor_country=$(echo "$tor_ipinfo_response" | jq -r '.country')
-        tor_cc=$(echo "$tor_ipinfo_response" | jq -r '.cc')
+        tor_region=$(echo "$tor_ipinfo_response" | jq -r '.region')
+        tor_city=$(echo "$tor_ipinfo_response" | jq -r '.city')
+        tor_isp=$(echo "$tor_ipinfo_response" | jq -r '.connection.org')
 
         echo -e "Tor IP:        $tor_ip"
-        echo -e "Tor Country:   $tor_country ($tor_cc)"
+        if [[ "$tor_country" == "Unknown" ]]; then
+            echo -e "Tor Location:  Unknown (Likely a Tor exit node)"
+        else
+            echo -e "Tor Location:  $tor_city, $tor_region, $tor_country"
+        fi
+        echo -e "Tor ISP:       $tor_isp"
     else
         echo "[!] Failed to fetch Tor IP info (is Tor running?)"
     fi
