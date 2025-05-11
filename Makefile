@@ -1,4 +1,4 @@
-PROGRAM_NAME=kalitorify
+PROGRAM_NAME=anonroute
 VERSION=1.29.0
 
 DATA_DIR=/usr/share
