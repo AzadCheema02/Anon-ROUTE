@@ -284,7 +284,7 @@ check_ip() {
     fi
 
     echo -e "\n[🌐] Regular IP Information:"
-    ipinfo_response=$(curl --silent --fail https://api.whatismyipaddress.com)
+    ipinfo_response=$(curl --silent --fail https://api.myip.com)
 
     if [[ $? -eq 0 && -n "$ipinfo_response" ]]; then
         ip=$(echo "$ipinfo_response" | jq -r '.ip')
@@ -298,7 +298,7 @@ check_ip() {
     fi
 
     echo -e "\n[🧅] Tor IP Information:"
-    tor_ipinfo_response=$(curl --silent --socks5-hostname 127.0.0.1:9050 https://api.whatismyipaddress.com)
+    tor_ipinfo_response=$(curl --silent --socks5-hostname 127.0.0.1:9050 https://api.myip.com)
 
     if [[ $? -eq 0 && -n "$tor_ipinfo_response" ]]; then
         tor_ip=$(echo "$tor_ipinfo_response" | jq -r '.ip')
