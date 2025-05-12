@@ -53,7 +53,7 @@ fi
 clear
 
 # Display Anon-Route banner
-figlet "<..../Anon-Route\....>"
+figlet "<../Anon-Route\..>"
 
 printf "${b}${white}
 ${version}
