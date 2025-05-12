@@ -53,14 +53,11 @@ fi
 clear
 
 # Display Anon-Route banner
-figlet "<../Anon-Route\..>"
+echo -e "${green}$(figlet 'Anon-Route')${reset}"
 
-printf "${b}${white}
-${version}
-
-=[ Transparent proxy through Tor
-=[ CHEEMA
-${reset}\\n\\n"
+    printf "${blue}${b}Version:${reset} ${green}1.0.0${reset}\n"
+    printf "${yellow}=[ Transparent proxy through Tor${reset}\n"
+    printf "${white}=[ Created by CHEEMA${reset}\n"
 }
 
 
