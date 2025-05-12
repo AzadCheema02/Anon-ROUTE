@@ -340,47 +340,34 @@ check_ip() {
 # - tor settings (check if Tor works correctly)
 # - public IP Address
 check_status() {
-    echo -e "${blue}${b}🔍 [+] Checking Anon-Route status...${reset}"
-    sleep 0.5
+    info "Check current status of Tor service"
 
-    # Check Tor service status
-    if systemctl is-active --quiet tor; then
-        echo -e "${green}${b}✅ [✔] Tor service is running.${reset}"
+    if systemctl is-active tor.service >/dev/null 2>&1; then
+        msg "Tor service is active"
     else
-        echo -e "${red}${b}❌ [✘] Tor service is NOT running.${reset}"
+        die "Tor service is not running! exit"
     fi
 
-    # Check iptables rule
-    if iptables -t nat -L OUTPUT -n | grep -q "REDIRECT.*9050"; then
-        echo -e "${green}${b}✅ [✔] iptables rules for Tor are active.${reset}"
+    # make an HTTP request with curl at: https://check.torproject.org/
+    # and grep the necessary strings from the HTML page to test connection
+    # with Tor
+    info "Check Tor network settings"
+
+    # curl SOCKS options:
+    #   --socks5 <host[:port]> SOCKS5 proxy on given host + port
+    #   --socks5-hostname <host[:port]> SOCKS5 proxy, pass host name to proxy
+    local hostport="localhost:9050"
+    local url="https://check.torproject.org/"
+
+    if curl --socks5 "${hostport}" --socks5-hostname "${hostport}" -s "${url}" | cat | grep -q "Congratulations"; then
+        msg "Your system is configured to use Tor"
     else
-        echo -e "${red}${b}❌ [✘] iptables rules for Tor are NOT active.${reset}"
+        printf "${red}%s${reset}\\n\\n" "Your system is not using Tor!"
+        printf "%s\\n" "try another Tor circuit with '${prog_name} --restart'"
+        exit 1
     fi
 
-    # Get public IP info from ipwho.is
-    echo -e "${blue}${b}🌐 [i] Fetching current public IP and location...${reset}"
-    ip_data=$(curl -s https://ipwho.is)
-
-    if echo "$ip_data" | grep -q '"success":true'; then
-        ip=$(echo "$ip_data" | grep -oP '"ip":"\K[^"]+')
-        city=$(echo "$ip_data" | grep -oP '"city":"\K[^"]*')
-        region=$(echo "$ip_data" | grep -oP '"region":"\K[^"]*')
-        country=$(echo "$ip_data" | grep -oP '"country":"\K[^"]*')
-        isp=$(echo "$ip_data" | grep -oP '"isp":"\K[^"]*')
-
-        echo -e "${white}${b}📡 [i] IP Address :${reset} ${ip}"
-        echo -e "${white}${b}🗺️  [i] Location   :${reset} ${city}, ${region}, ${country}"
-        echo -e "${white}${b}🏢 [i] ISP        :${reset} ${isp}"
-
-        # Tor exit node check
-        if curl -s https://check.torproject.org/api/ip | grep -q '"IsTor":true'; then
-            echo -e "${green}${b}🛡️ ✅ This IP is a Tor exit node.${reset}"
-        else
-            echo -e "${red}${b}🚫 ❌ This IP is NOT a Tor exit node.${reset}"
-        fi
-    else
-        echo -e "${red}${b}⚠️ [✘] Failed to retrieve IP/location data.${reset}"
-    fi
+    check_ip
 }
 
 
