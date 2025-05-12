@@ -339,7 +339,7 @@ check_ip() {
 # - tor.service
 # - tor settings (check if Tor works correctly)
 # - public IP Address
-status() {
+check_status() {
     echo -e "${blue}${b}🔍 [+] Checking Anon-Route status...${reset}"
     sleep 0.5
 
