@@ -474,6 +474,11 @@ restart() {
         die "Tor service is not running! exit"
     fi
 }
+## check IP Table Rules
+show_iptables() {
+    echo -e "${b}${blue}🛡️  Current iptables Rules:${reset}"
+    sudo iptables -L -n -v --line-numbers
+}
 
 
 ## Show help menù
@@ -491,9 +496,9 @@ usage() {
     printf "%s\\n" "-c, --clearnet  reset iptables and return to clearnet navigation"
     printf "%s\\n" "-s, --status    check status of program and services"
     printf "%s\\n" "-i, --ipinfo    show public IP address"
+    printf "%s\\n\\n" "-tb, --table   display current IP Table Rules"
     printf "%s\\n" "-r, --restart   restart tor service and change IP address"
     printf "%s\\n\\n" "-v, --version   display program version and exit"
-
     printf "%s\\n" "Project URL: ${git_url}"
     printf "%s\\n" "Report bugs: ${git_url}/issues"
 
@@ -527,6 +532,9 @@ main() {
                 ;;
             -i | --ipinfo)
                 check_ip
+                ;;
+            -tb | --table)
+                show_iptables
                 ;;
             -v | --version)
                 print_version
