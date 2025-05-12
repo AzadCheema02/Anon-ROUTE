@@ -480,47 +480,42 @@ show_iptables() {
     sudo iptables -L -n -v --line-numbers
 }
 
-get_location() {
-    local ip=$1
-    # Use ipwho.is to get the location data
-    location=$(curl -s "https://ipwho.is/$ip" | jq -r '.country + ", " + .city + " (Lat: " + (.latitude | tostring) + ", Long: " + (.longitude | tostring) + ")"')
-    if [[ "$location" == "null" ]]; then
-        echo "Location not available"
-    else
-        echo "$location"
-    fi
+check_system_resources() {
+    echo -e "\n--- System Resource Usage ---"
+
+    # CPU usage
+    echo -n "CPU Usage: "
+    mpstat | grep "all" | awk '{print $3"%"}'
+
+    # RAM usage
+    echo -n "RAM Usage: "
+    free -h | grep Mem | awk '{print $3 "/" $2 " (" $3/$2*100 "%)"}'
+
+    # Disk usage
+    echo -n "Disk Usage: "
+    df -h | grep "^/dev" | awk '{print $1 ": " $5}'
+
+    echo -e "\n--- Resource Check Completed ---"
 }
 
-# Function to check the current Tor circuit
-check_tor_circuit() {
-    # Check if the Tor service is running
+rotate_tor_ip() {
+    echo -e "\n--- Rotating IP ---"
+    
+    # Check if Tor is running
     if ! pgrep tor > /dev/null; then
-        echo "Tor service is not running."
+        echo "Tor service is not running. Please start Tor first."
         return
     fi
 
-    # Get the Tor circuit details using the control port (9051)
-    circuits=$(tor --list-circuits --controlport 9051)
-
-    # Check if there are any active circuits
-    if [[ -z "$circuits" ]]; then
-        echo "No active Tor circuits found."
-        return
-    fi
-
-    # Loop through the circuit relays and get the location for each relay
-    echo "--- Tor Circuit Path with Location ---"
-    circuit_id=$(echo "$circuits" | grep "Circuit" | cut -d ' ' -f 2)
-    echo "Circuit ID: $circuit_id"
-
-    relays=$(echo "$circuits" | grep "Relay" | cut -d ' ' -f 3)
-    i=1
-    for relay in $relays; do
-        echo -n "  Relay $i: $relay - "
-        location=$(get_location "$relay")
-        echo "$location"
-        ((i++))
-    done
+    # Send the signal to Tor to get a new IP
+    echo "Sending SIGINT to Tor to request new circuit (IP)..."
+    tor --signal NEWNYM
+    sleep 10  # Wait for the new IP to be assigned
+    
+    # Confirm the IP has changed
+    echo "Checking current public IP..."
+    curl -s ifconfig.me
+    echo -e "\n--- IP Rotation Completed ---"
 }
 
 
@@ -540,7 +535,8 @@ usage() {
     printf "%s\\n" "-s, --status    check status of program and services"
     printf "%s\\n" "-i, --ipinfo    show public IP address"
     printf "%s\\n\\n" "-tb, --table   display current IP Table Rules"
-    printf "%s\\n\\n" "-nd, --nodes   display current TOR Relay Nodes Circuit"
+    printf "%s\\n\\n" "-rc, --resource-chech   display  system's CPU, RAM, and disk usage performance"
+    printf "%s\\n" "-rip, --rotate-ip      rotate the Tor IP automatically after 10 seconds"
     printf "%s\\n" "-r, --restart   restart tor service and change IP address"
     printf "%s\\n\\n" "-v, --version   display program version and exit"
     printf "%s\\n" "Project URL: ${git_url}"
@@ -580,8 +576,11 @@ main() {
             -tb | --table)
                 show_iptables
                 ;;
-            -nd | --nodes)
-                check_tor_circuit
+            -rc | --resource-check)
+                check_system_resources
+                ;;
+            -rip | --rotate-ip)
+                rotate_tor_ip
                 ;;
             -v | --version)
                 print_version
