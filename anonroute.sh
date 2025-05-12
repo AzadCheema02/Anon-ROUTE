@@ -6,7 +6,7 @@
 readonly prog_name="Anon-Route"
 readonly version="1.0.0"
 readonly signature="Copyright (C) 2025"
-readonly git_url="https://github.com/brainfucksec/Anon-ROUTE"
+readonly git_url="https://github.com/AzadCheema02/Anon-Route"
 
 # set colors for stdout
 export red="$(tput setaf 1)"
@@ -57,7 +57,7 @@ echo -e "${green}$(figlet 'Anon-Route')${reset}"
 
     printf "${blue}${b}Version:${reset} ${green}1.0.0${reset}\n"
     printf "${yellow}=[ Transparent proxy through Tor${reset}\n"
-    printf "${white}=[ Created by CHEEMA${reset}\n"
+    printf "${white}=[ Created by AZADVIR SINGH${reset}\n"
 }
 
 
