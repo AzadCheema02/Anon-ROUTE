@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 ## General
@@ -42,7 +41,6 @@ readonly non_tor="127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 
 ## Show program banner
 banner() {
-#!/bin/bash
 
 # Check if figlet is installed
 if ! command -v figlet &> /dev/null
